@@ -289,9 +289,10 @@ canvas {
 .side-panel h2 {
   margin: 0;
   font-family: "Baloo 2", "Noto Sans SC", sans-serif;
-  font-size: 34px;
+  font-size: clamp(27px, 2.6vw, 34px);
   line-height: 1.08;
   letter-spacing: 0;
+  white-space: nowrap;
 }
 
 .summary {
@@ -403,5 +404,9 @@ canvas {
 
   .side-panel {
     padding: 18px;
+  }
+
+  .side-panel h2 {
+    font-size: clamp(25px, 7.8vw, 34px);
   }
 }
