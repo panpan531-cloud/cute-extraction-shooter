@@ -63,6 +63,7 @@ canvas {
   aspect-ratio: 16 / 10;
   background: #f8f0dd;
   cursor: crosshair;
+  image-rendering: auto;
 }
 
 .hud {
@@ -110,8 +111,8 @@ canvas {
   gap: 16px;
   padding: 32px;
   text-align: center;
-  background: rgba(255, 250, 245, 0.72);
-  backdrop-filter: blur(10px);
+  background: rgba(255, 250, 245, 0.68);
+  backdrop-filter: blur(5px);
 }
 
 .overlay.is-hidden {
@@ -144,6 +145,98 @@ canvas {
   color: #5f556d;
   font-size: clamp(16px, 2vw, 20px);
   line-height: 1.7;
+}
+
+.level-map {
+  width: min(720px, 100%);
+  margin: 2px auto 4px;
+  padding: 14px 8px 2px;
+}
+
+.map-path {
+  position: relative;
+  min-height: 128px;
+}
+
+.map-path::before {
+  content: "";
+  position: absolute;
+  left: 9%;
+  right: 9%;
+  top: 58px;
+  height: 10px;
+  border-radius: 999px;
+  background:
+    repeating-linear-gradient(
+      90deg,
+      rgba(255, 127, 173, 0.55) 0 20px,
+      rgba(255, 227, 117, 0.75) 20px 40px,
+      rgba(104, 199, 163, 0.6) 40px 60px
+    );
+  box-shadow: 0 8px 18px rgba(118, 82, 139, 0.12);
+}
+
+.level-node {
+  position: absolute;
+  top: calc(58px + var(--lift, 0px));
+  left: var(--x);
+  width: 86px;
+  transform: translate(-50%, -50%);
+  display: grid;
+  justify-items: center;
+  gap: 7px;
+}
+
+.node-orb {
+  width: 54px;
+  height: 54px;
+  display: grid;
+  place-items: center;
+  border: 3px solid rgba(255, 255, 255, 0.82);
+  border-radius: 50%;
+  background: #f2eaf4;
+  color: #857b94;
+  box-shadow: 0 12px 22px rgba(77, 55, 94, 0.16);
+  font-family: "Baloo 2", "Noto Sans SC", sans-serif;
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.level-node.is-unlocked .node-orb {
+  background: linear-gradient(145deg, #fff 0%, #ffd9e7 45%, #ffe6a3 100%);
+  color: var(--ink);
+}
+
+.level-node.is-current .node-orb {
+  outline: 4px solid rgba(255, 127, 173, 0.32);
+  background: linear-gradient(145deg, #ffffff 0%, #ff9fc4 48%, #ffbd75 100%);
+  color: #ffffff;
+}
+
+.level-node.is-cleared .node-orb {
+  background: linear-gradient(145deg, #ffffff 0%, #8fe3c1 100%);
+  color: #2f8065;
+}
+
+.node-label {
+  width: 100%;
+  color: #5f556d;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.level-node.is-locked {
+  opacity: 0.52;
+}
+
+.level-summary {
+  min-height: 58px;
+  margin: 0 auto;
+  width: min(560px, 100%);
+  color: #62566e;
+  font-size: 15px;
+  line-height: 1.55;
 }
 
 #startBtn {
@@ -284,6 +377,28 @@ canvas {
 
   .overlay {
     padding: 18px;
+  }
+
+  .level-map {
+    padding-inline: 0;
+  }
+
+  .map-path {
+    min-height: 112px;
+  }
+
+  .level-node {
+    width: 64px;
+  }
+
+  .node-orb {
+    width: 42px;
+    height: 42px;
+    font-size: 19px;
+  }
+
+  .node-label {
+    font-size: 10px;
   }
 
   .side-panel {
