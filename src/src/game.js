@@ -1,5 +1,10 @@
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
+const VIEW = {
+  width: 960,
+  height: 600,
+  dpr: 1,
+};
 
 const lootEl = document.getElementById("lootCount");
 const hpEl = document.getElementById("hpCount");
@@ -29,9 +34,9 @@ const COLORS = {
 };
 
 const state = {
-  status: "menu",
+  status: "map",
   keys: new Set(),
-  mouse: { x: canvas.width / 2, y: canvas.height / 2, down: false },
+  mouse: { x: VIEW.width / 2, y: VIEW.height / 2, down: false },
   camera: { x: 0, y: 0 },
   player: null,
   bullets: [],
@@ -43,6 +48,8 @@ const state = {
   exit: null,
   collected: 0,
   needed: 8,
+  levelIndex: 0,
+  unlockedLevel: 0,
   timeLeft: 90,
   graceLeft: 4,
   lastShot: 0,
@@ -51,14 +58,79 @@ const state = {
   endMessage: "",
 };
 
+const LEVELS = [
+  {
+    name: "棉花糖小径",
+    story: "第一站很温柔，适合熟悉移动、收集和撤离节奏。",
+    needed: 6,
+    time: 95,
+    enemies: 4,
+    enemyBoost: 0.82,
+    lootCount: 7,
+    exitY: 500,
+    wallShift: 0,
+  },
+  {
+    name: "莓果喷泉",
+    story: "小乌云开始绕路，星糖也更分散了。",
+    needed: 7,
+    time: 90,
+    enemies: 5,
+    enemyBoost: 0.95,
+    lootCount: 8,
+    exitY: 270,
+    wallShift: 42,
+  },
+  {
+    name: "薄荷迷宫",
+    story: "花墙更多，路线要更果断，攒够星糖就撤。",
+    needed: 8,
+    time: 85,
+    enemies: 6,
+    enemyBoost: 1.05,
+    lootCount: 9,
+    exitY: 720,
+    wallShift: -34,
+  },
+  {
+    name: "月光茶会",
+    story: "小乌云速度变快，泡泡法杖要更勤快。",
+    needed: 9,
+    time: 82,
+    enemies: 7,
+    enemyBoost: 1.14,
+    lootCount: 10,
+    exitY: 360,
+    wallShift: 78,
+  },
+  {
+    name: "星糖王冠",
+    story: "终点关卡：收集足够星糖，穿过王冠花门完成通关。",
+    needed: 10,
+    time: 80,
+    enemies: 8,
+    enemyBoost: 1.24,
+    lootCount: 10,
+    exitY: 620,
+    wallShift: -76,
+  },
+];
+
 const rand = (min, max) => Math.random() * (max - min) + min;
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
 const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
 
-function startGame() {
+function currentLevel() {
+  return LEVELS[state.levelIndex];
+}
+
+function startLevel(index = state.levelIndex) {
+  state.levelIndex = clamp(index, 0, LEVELS.length - 1);
+  const level = currentLevel();
   state.status = "playing";
   state.collected = 0;
-  state.timeLeft = 90;
+  state.needed = level.needed;
+  state.timeLeft = level.time;
   state.graceLeft = 4;
   state.bullets = [];
   state.enemies = [];
@@ -86,6 +158,7 @@ function startGame() {
 }
 
 function buildGarden() {
+  const level = currentLevel();
   const wallSpecs = [
     [320, 120, 64, 260],
     [530, 545, 62, 260],
@@ -95,9 +168,9 @@ function buildGarden() {
     [1250, 430, 68, 250],
   ];
 
-  state.walls = wallSpecs.map(([x, y, w, h]) => ({
+  state.walls = wallSpecs.map(([x, y, w, h], index) => ({
     x,
-    y,
+    y: clamp(y + (index % 2 === 0 ? level.wallShift : -level.wallShift * 0.55), 80, WORLD.height - h - 80),
     w,
     h,
     color: Math.random() > 0.5 ? "#ffcfdb" : "#c8ebd8",
@@ -115,9 +188,9 @@ function buildGarden() {
     [690, 465],
     [1165, 840],
   ];
-  state.loot = lootSpots.map(([x, y], index) => ({
+  state.loot = lootSpots.slice(0, level.lootCount).map(([x, y], index) => ({
     x,
-    y,
+    y: clamp(y + Math.sin(index + state.levelIndex) * 46, 80, WORLD.height - 80),
     r: 16,
     taken: false,
     bob: rand(0, Math.PI * 2),
@@ -131,13 +204,15 @@ function buildGarden() {
     [1120, 220],
     [1290, 630],
     [1430, 350],
+    [1015, 830],
+    [720, 120],
   ];
-  state.enemies = enemySpots.map(([x, y], index) => ({
+  state.enemies = enemySpots.slice(0, level.enemies).map(([x, y], index) => ({
     x,
-    y,
+    y: clamp(y + Math.cos(index * 1.8 + state.levelIndex) * 54, 70, WORLD.height - 70),
     r: index % 2 ? 24 : 28,
     hp: index % 2 ? 38 : 52,
-    speed: index % 2 ? 58 : 48,
+    speed: (index % 2 ? 58 : 48) * level.enemyBoost,
     bump: rand(0, Math.PI * 2),
     hitFlash: 0,
     drift: rand(-0.65, 0.65),
@@ -155,7 +230,7 @@ function buildGarden() {
 
   state.exit = {
     x: WORLD.width - 130,
-    y: rand(250, WORLD.height - 250),
+    y: level.exitY,
     r: 48,
     open: false,
     pulse: 0,
@@ -187,10 +262,7 @@ function update(dt, now) {
   state.exit.open = state.collected >= state.needed;
   state.exit.pulse += dt * 3;
   if (state.exit.open && dist(state.player, state.exit) < state.player.r + state.exit.r * 0.72) {
-    endGame(
-      "撤离成功",
-      `你带着 ${state.collected} 颗星糖回到了甜品小屋，花园恢复了亮晶晶的好心情。`,
-    );
+    clearLevel();
   }
 
   if (state.player.hp <= 0) {
@@ -202,6 +274,33 @@ function update(dt, now) {
   }
 
   updateHud();
+}
+
+function resizeCanvas() {
+  const rect = canvas.getBoundingClientRect();
+  const dpr = Math.min(window.devicePixelRatio || 1, 2.5);
+  VIEW.width = Math.max(320, Math.round(rect.width));
+  VIEW.height = Math.max(200, Math.round(rect.height));
+  VIEW.dpr = dpr;
+
+  const targetWidth = Math.round(VIEW.width * dpr);
+  const targetHeight = Math.round(VIEW.height * dpr);
+  if (canvas.width !== targetWidth || canvas.height !== targetHeight) {
+    canvas.width = targetWidth;
+    canvas.height = targetHeight;
+  }
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = "high";
+  if (state.player) updateCamera();
+}
+
+function canvasViewWidth() {
+  return VIEW.width;
+}
+
+function canvasViewHeight() {
+  return VIEW.height;
 }
 
 function movePlayer(dt) {
@@ -236,8 +335,8 @@ function moveCircle(entity, dx, dy) {
 }
 
 function updateCamera() {
-  state.camera.x = clamp(state.player.x - canvas.width / 2, 0, WORLD.width - canvas.width);
-  state.camera.y = clamp(state.player.y - canvas.height / 2, 0, WORLD.height - canvas.height);
+  state.camera.x = clamp(state.player.x - canvasViewWidth() / 2, 0, WORLD.width - canvasViewWidth());
+  state.camera.y = clamp(state.player.y - canvasViewHeight() / 2, 0, WORLD.height - canvasViewHeight());
 }
 
 function aimPlayer() {
@@ -370,7 +469,8 @@ function burst(x, y, color, count, speed) {
 }
 
 function draw() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.setTransform(VIEW.dpr, 0, 0, VIEW.dpr, 0, 0);
+  ctx.clearRect(0, 0, canvasViewWidth(), canvasViewHeight());
   ctx.save();
   ctx.translate(-state.camera.x, -state.camera.y);
   drawWorld();
@@ -650,13 +750,13 @@ function drawGraceHint() {
   ctx.fillStyle = "rgba(255, 255, 255, 0.78)";
   ctx.strokeStyle = "rgba(86, 70, 105, 0.16)";
   ctx.lineWidth = 1;
-  roundRect(ctx, canvas.width / 2 - 145, canvas.height - 58, 290, 36, 8);
+  roundRect(ctx, canvasViewWidth() / 2 - 145, canvasViewHeight() - 58, 290, 36, 8);
   ctx.fill();
   ctx.stroke();
   ctx.fillStyle = COLORS.ink;
   ctx.font = "700 14px 'Noto Sans SC', sans-serif";
   ctx.textAlign = "center";
-  ctx.fillText(`泡泡护盾 ${Math.ceil(state.graceLeft)} 秒`, canvas.width / 2, canvas.height - 35);
+  ctx.fillText(`泡泡护盾 ${Math.ceil(state.graceLeft)} 秒`, canvasViewWidth() / 2, canvasViewHeight() - 35);
   ctx.restore();
 }
 
@@ -712,8 +812,8 @@ function drawTinyStar(x, y, r, color) {
 function drawMinimap() {
   const mapW = 148;
   const mapH = 92;
-  const x = canvas.width - mapW - 16;
-  const y = canvas.height - mapH - 16;
+  const x = canvasViewWidth() - mapW - 16;
+  const y = canvasViewHeight() - mapH - 16;
   ctx.save();
   ctx.fillStyle = "rgba(255, 255, 255, 0.72)";
   ctx.strokeStyle = "rgba(86, 70, 105, 0.2)";
@@ -755,8 +855,8 @@ function roundRect(context, x, y, width, height, radius) {
 
 function screenToWorld(point) {
   const rect = canvas.getBoundingClientRect();
-  const scaleX = canvas.width / rect.width;
-  const scaleY = canvas.height / rect.height;
+  const scaleX = canvasViewWidth() / rect.width;
+  const scaleY = canvasViewHeight() / rect.height;
   return {
     x: (point.x - rect.left) * scaleX + state.camera.x,
     y: (point.y - rect.top) * scaleY + state.camera.y,
@@ -773,11 +873,69 @@ function endGame(title, message) {
   overlay.classList.remove("is-hidden");
 }
 
+function clearLevel() {
+  const clearedLevel = state.levelIndex;
+  state.unlockedLevel = Math.max(state.unlockedLevel, Math.min(clearedLevel + 1, LEVELS.length - 1));
+  if (clearedLevel >= LEVELS.length - 1) {
+    state.status = "ended";
+    overlay.querySelector("h1").textContent = "全部通关";
+    overlayText.textContent = "你完成了 5 个花园关卡，星糖王冠亮起来了。现在可以回地图重玩任意已解锁关卡。";
+    startBtn.textContent = "回到地图";
+    overlay.classList.remove("is-hidden");
+    return;
+  }
+
+  state.levelIndex = clearedLevel + 1;
+  showLevelMap(`第 ${clearedLevel + 1} 关完成。下一站：${currentLevel().name}`);
+}
+
 function updateHud() {
   lootEl.textContent = `${state.collected}/${state.needed}`;
   hpEl.textContent = Math.max(0, Math.ceil(state.player?.hp ?? 100));
   timeEl.textContent = Math.max(0, Math.ceil(state.timeLeft));
   ammoEl.textContent = state.player ? `${state.player.ammo}/${state.player.maxAmmo}` : "18";
+}
+
+function showLevelMap(note = "") {
+  state.status = "map";
+  state.needed = currentLevel().needed;
+  state.timeLeft = currentLevel().time;
+  updateHud();
+  const level = currentLevel();
+  overlay.querySelector("h1").textContent = "星糖闯关地图";
+  overlayText.innerHTML = `
+    ${note ? `<span class="level-note">${note}</span><br />` : ""}
+    当前关卡：第 ${state.levelIndex + 1} 关「${level.name}」。${level.story}
+  `;
+  startBtn.textContent = `挑战第 ${state.levelIndex + 1} 关`;
+
+  const existingMap = overlay.querySelector(".level-map");
+  existingMap?.remove();
+  overlayText.insertAdjacentHTML("afterend", renderLevelMap());
+  overlay.classList.remove("is-hidden");
+}
+
+function renderLevelMap() {
+  const xs = ["9%", "29%", "50%", "71%", "91%"];
+  const lifts = ["12px", "-18px", "10px", "-20px", "8px"];
+  const nodes = LEVELS.map((level, index) => {
+    const status =
+      index < state.unlockedLevel ? "is-cleared" : index === state.levelIndex ? "is-current is-unlocked" : index <= state.unlockedLevel ? "is-unlocked" : "is-locked";
+    const marker = index < state.unlockedLevel ? "✓" : index + 1;
+    return `
+      <div class="level-node ${status}" style="--x: ${xs[index]}; --lift: ${lifts[index]}">
+        <div class="node-orb">${marker}</div>
+        <div class="node-label">${level.name}</div>
+      </div>
+    `;
+  }).join("");
+
+  return `
+    <div class="level-map" aria-label="5 个关卡地图">
+      <div class="map-path">${nodes}</div>
+      <div class="level-summary">第 ${state.levelIndex + 1} 关需要收集 ${currentLevel().needed} 颗星糖，限时 ${currentLevel().time} 秒。</div>
+    </div>
+  `;
 }
 
 function loop(now) {
@@ -816,10 +974,18 @@ window.addEventListener("mouseup", () => {
   state.mouse.down = false;
 });
 
+window.addEventListener("resize", () => {
+  resizeCanvas();
+});
+
 startBtn.addEventListener("click", () => {
-  overlay.querySelector("h1").textContent = "星糖花园撤离战";
-  startBtn.textContent = "开始游戏";
-  startGame();
+  if (state.status === "ended" && state.levelIndex >= LEVELS.length - 1 && state.unlockedLevel >= LEVELS.length - 1) {
+    state.levelIndex = 0;
+    state.unlockedLevel = LEVELS.length - 1;
+    showLevelMap();
+    return;
+  }
+  startLevel();
 });
 
 function seedMenuPreview() {
@@ -840,5 +1006,7 @@ function seedMenuPreview() {
   updateHud();
 }
 
+resizeCanvas();
 seedMenuPreview();
+showLevelMap();
 requestAnimationFrame(loop);
