@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>星糖花园撤离战</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&family=Noto+Sans+SC:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <section class="game-panel" aria-label="星糖花园撤离战游戏区域">
+        <canvas id="game" width="960" height="600"></canvas>
+
+        <div class="hud" aria-live="polite">
+          <div class="stat">
+            <span class="stat-label">星糖</span>
+            <strong id="lootCount">0/8</strong>
+          </div>
+          <div class="stat">
+            <span class="stat-label">心情</span>
+            <strong id="hpCount">100</strong>
+          </div>
+          <div class="stat">
+            <span class="stat-label">时间</span>
+            <strong id="timeCount">90</strong>
+          </div>
+          <div class="stat">
+            <span class="stat-label">泡泡</span>
+            <strong id="ammoCount">18</strong>
+          </div>
+        </div>
+
+        <div id="overlay" class="overlay">
+          <div class="title-mark" aria-hidden="true">✦</div>
+          <h1>星糖花园撤离战</h1>
+          <p id="overlayText">
+            收集 8 颗星糖，找到发光的花门撤离。用泡泡法杖把小乌云推远，别让好心情被淋湿。
+          </p>
+          <button id="startBtn" type="button">开始游戏</button>
+        </div>
+      </section>
+
+      <aside class="side-panel" aria-label="游戏信息">
+        <div>
+          <p class="eyebrow">Cute Extraction Shooter</p>
+          <h2>拿到星糖，然后撤离</h2>
+          <p class="summary">
+            这是一个可爱版资源抽取射击小游戏：探索花园、收集资源、击退敌人，并在时间结束前撤到出口。
+          </p>
+        </div>
+
+        <div class="mission">
+          <h3>目标</h3>
+          <ul>
+            <li>收集地图里的 8 颗星糖</li>
+            <li>找到右侧随机出现的花门</li>
+            <li>在倒计时结束前成功撤离</li>
+          </ul>
+        </div>
+
+        <div class="controls">
+          <h3>操作</h3>
+          <dl>
+            <div>
+              <dt>移动</dt>
+              <dd>WASD / 方向键</dd>
+            </div>
+            <div>
+              <dt>瞄准</dt>
+              <dd>鼠标移动</dd>
+            </div>
+            <div>
+              <dt>射击</dt>
+              <dd>鼠标左键 / 空格</dd>
+            </div>
+            <div>
+              <dt>重新开始</dt>
+              <dd>R</dd>
+            </div>
+          </dl>
+        </div>
+      </aside>
+    </main>
+
+    <script src="./src/game.js"></script>
+  </body>
+</html>
